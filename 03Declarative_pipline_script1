@@ -1,0 +1,47 @@
+pipeline{
+
+agent any
+
+tools{
+maven "maven3.9.6"
+}
+  
+triggers {
+  pollSCM '* * * * *'
+}
+
+stages{
+
+  //CheckOutCode
+  stage('CodeChecOut'){
+  steps{
+  git branch: 'development', credentialsId: '039d9e6d-9b4b-4ab5-87da-663e8850d508', url: 'https://github.com/playdevops-co/maven-web-application.git'
+  }
+  }
+  //Code Build
+  stage('Build'){
+  steps{
+  sh "mvn clean package"
+  }
+  }
+  //Code Quality Test
+  stage('SonarQubeTest'){
+  steps{
+  sh "mvn sonar:sonar"
+  }
+  }
+  //Upload artifacts into nexus repository
+  stage('UploadArtifactsIntoNexus'){
+  steps{
+  sh "mvn clean deploy"
+  }
+  }
+  stage('DepolyIntoTomcatServer'){
+  steps{
+  
+  }
+  }
+  
+}//closing stages
+
+}//closign pipline

@@ -1,0 +1,134 @@
+Exampale -1
+-----------
+pipeline{
+
+agent any
+/*
+agent{
+label 'NodeName'
+}
+*/
+
+tools{
+maven 'maven3.8.3'
+}
+
+options{
+//It will add timestamps to the output
+timestamps()
+//Discard Old Build.. Keep only last 5 Build with artifcats
+buildDiscarder(logRotator(artifactDaysToKeepStr: '', artifactNumToKeepStr: '5', daysToKeepStr: '', numToKeepStr: '5')
+
+}
+
+triggers{
+//Poll SCM
+pollSCM('* * * * *')
+//BuildPeriodically
+cron('* * * * *')
+//GitHub WebHook
+githubPush()
+}
+
+stages{
+
+  //Getting the code from GitHub Repo
+  stage('CheckoutCode'){
+  steps{
+  
+  git branch: 'development', credentialsId: '9aad10da-e742-413a-a2f6-ce6a8b007f70', url: 'https://github.com/MithunTechnologiesDevOps/maven-web-application.git'
+      }
+  }
+  
+  //After getting coe doing the build using maven
+  stage('Build'){
+  steps{
+   sh "mvn clean package"
+  }
+  }
+  
+  //Executing sonarqube Report
+  stage('SOnarQubeReport'){
+  steps{
+   sh "mvn sonar:sonar"
+  }
+  }
+  
+  //Uploading artifcats into Nexus repo
+  /*
+  stage('UploadArtifactinotNexus'){
+  steps{
+   sh "mvn deploy"
+  }
+  }
+  */
+  
+  stage('DeployAppintoTomcatServer'){
+  steps{
+  sshagent(['dd147e39-1f55-4554-9700-b10dc494211f']) {
+    sh "scp -o StrictHostKeyChecking=no target/maven-web-application.war ec2-user@13.233.201.155:/opt/apache-tomcat-9.0.54/webapps/"
+  }
+  }
+  }
+  
+}//Stages Closing
+
+post{
+ success{
+ mail bcc: '', body: '''Build Over - Success..
+
+ Regards,
+ Mithun Software Solutions,
+ 9980923226''', cc: 'devopstrainingblr@gmail.com', from: '', replyTo: '', subject: 'Build over!...', to: 'devopstrainingblr@gmail.com'
+ }
+ 
+ failure{
+ mail bcc: '', body: '''Build Over - Failure..
+
+ Regards,
+ Mithun Software Solutions,
+ 9980923226''', cc: 'devopstrainingblr@gmail.com', from: '', replyTo: '', subject: 'Build over!...', to: 'devopstrainingblr@gmail.com'
+ }
+
+}
+
+}//Pipeline closing
+
+
+Example -2
+----------
+pipeline {
+    agent any
+stages {    
+  stage('CreateDirsandFiles'){
+  steps{
+  sh "touch test.py"
+  dir('/tmp/pipeline/'){
+  sh "touch pipeline.txt"
+  sh "touch test.sh"
+  }
+  }
+  }
+
+}
+}
+
+Example -3
+----------
+pipeline {
+    agent any
+    
+    parameters {
+    choice(name: 'BranchName', choices:['master','development','stage','qa'], description: 'Using this we can pass the branch names' )
+    string(name: 'PersonName',  defaultValue: 'Bhaskar Reddy', description: 'This Parameter, will use to pass the persona name')
+    }
+    stages {
+        stage('CheckoutCode') {
+            steps {
+             git branch: "${params.BranchName}'" credentialsId: '039d9e6d-9b4b-4ab5-87da-663e8850d508', url: 'https://github.com/playdevops-co/maven-web-application.git'
+             sh "echo The persona name is: ${params.PersonName}"
+             }
+        }
+    }
+}
+

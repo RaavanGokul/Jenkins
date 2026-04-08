@@ -1,0 +1,29 @@
+pipeline{
+
+agent any
+
+tools {
+  maven 'maven3.9.6'
+}
+
+triggers{
+//pipelineTriggers([pollSCM('* * * * *')])])
+pipelineTriggers([githubPush()])])
+}
+properties([parameters([choice(choices: ['development', 'master', 'qa', 'uat'], name: 'BranchName'), string(defaultValue: 'raavangokul', description: 'Change The PersonName', name: 'PersonName')]), [$class: 'JobLocalConfiguration', changeReasonComment: '']])
+
+stages{
+
+stage('CheckOutCode'){
+steps{
+git branch: "{params.BranchName}" credentialsId: '039d9e6d-9b4b-4ab5-87da-663e8850d508', url: 'https://github.com/playdevops-co/maven-web-application.git'
+}
+}
+stage('Build'){
+steps{
+sh "mvn clean package"
+}
+}
+}//stages
+
+}//pipeline
